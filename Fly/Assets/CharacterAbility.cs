@@ -15,10 +15,10 @@ public class CharacterAbility : MonoBehaviour
     public float FireDis;
     public float FireOffset;
 
-    private float CurrentEnergy;
+    private float CurrentEnergy { get { return GetComponent<PlayerController>()._curEnergy; } set { GetComponent<PlayerController>()._curEnergy = value; } }
     private bool EnergyMaxed;
     private float EnergyRecoverGapTimeCount;
-    private bool EnergyCosting;
+    public bool EnergyCosting;
     private GameObject Fire;
     private GameObject CastiedIce;
 
@@ -51,7 +51,9 @@ public class CharacterAbility : MonoBehaviour
         if (EnergyCosting)
         {
             EnergyRecoverGapTimeCount = 0;
-            CurrentEnergy -= EnergyCostSpeed * Time.deltaTime;
+            //CurrentEnergy -= EnergyCostSpeed * Time.deltaTime;
+            GetComponent<PlayerController>()._updateEnergy(-EnergyCostSpeed * Time.deltaTime);
+
             if (CurrentEnergy <= 0)
             {
                 Destroy(Fire);
@@ -72,34 +74,7 @@ public class CharacterAbility : MonoBehaviour
                 CastiedIce.GetComponent<IDamagable>().Damaging = false;
                 CastiedIce = null;
             }
-            EnergyRecoverGapTimeCount += Time.deltaTime;
-            if (EnergyRecoverGapTimeCount >= EnergyRecoverGap)
-            {
-                CurrentEnergy += EnergyRecoverSpeed * Time.deltaTime;
-                if (CurrentEnergy >= MaxEnergy)
-                {
-                    CurrentEnergy = MaxEnergy;
-                    EnergyMaxed = true;
-                }
-                else
-                {
-                    EnergyMaxed = false;
-                }
-            }
         }
-
-        if (EnergyMaxed)
-        {
-            EnergyBar.GetComponent<Image>().enabled = false;
-            EnergyBar.transform.GetChild(0).GetComponent<Image>().enabled = false;
-        }
-        else
-        {
-            EnergyBar.GetComponent<Image>().enabled = true;
-            EnergyBar.transform.GetChild(0).GetComponent<Image>().enabled = true;
-        }
-
-        EnergyBar.transform.GetChild(0).GetComponent<Image>().fillAmount = CurrentEnergy / MaxEnergy;
 
         
     }
@@ -141,6 +116,16 @@ public class CharacterAbility : MonoBehaviour
     private bool InputDeactivate()
     {
         return Input.GetMouseButtonUp(0);
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("EnergyBox"))
+        {
+            GetComponent<PlayerController>().MaxBoosterSpeed += GetComponent<PlayerController>().MaxBoosterSpeed * MaxEnergyIncrement / GetComponent<PlayerController>().MaxEnergy;
+            GetComponent<PlayerController>().MaxEnergy += MaxEnergyIncrement;
+            Destroy(other.gameObject);
+        }
     }
 
     private void OnControllerColliderHit(ControllerColliderHit hit)
